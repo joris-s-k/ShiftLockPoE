@@ -12,31 +12,29 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 Menu, Tray, Icon, %A_ScriptDir%\ShiftLock.ico
 
 #UseHook On
-shiftPreset := [] ;contains preset for ctrl + shift + p
+shiftPreset := readStateFromIni("preset") ;contains preset for ctrl + shift + p
 keyStrings := [] ;mapping: skill index to keyname
 shiftState := {} ;mapping: key name to shift state
+shiftPrevious := readStateFromIni("previous")
 
 ;temp copy of productionconfig due to encoding, read skill bindings
-IniRead, productionPath, Config.ini, General, PathToConfig
+productionPath := A_MyDocuments . "\My Games\Path of Exile\production_Config.ini"
 FileRead, tempIni, %productionPath%
 FileAppend, %tempIni%, tempConfig.ini
 ;prodConf := FileOpen(%productionPath%, "r")
 IniRead, disableLMB, Config.ini, General, disableLMB
-active := true
 blockDisplay := false
-skillPrefix := "use_bound_skill"
 
 #If WinActive("ahk_group PoEWindowGrp")
 
 ;read keynames, read preset
+
 skillIndex := 1
 while(skillIndex < 9){
-	skillName := skillPrefix . skillIndex
+	skillName := "use_bound_skill" . skillIndex
 	
 	IniRead, kValue, tempConfig.ini, ACTION_KEYS, %skillName%
 	IniRead, kName, Config.ini, Code_to_Name, %kValue%, NONE
-	IniRead, preset, Config.ini, Preset, %skillName% 
-	IniRead, prevState, Config.ini, Saved, %skillName%, false
 	
 	if(kName == "NONE"){
 		Transform, kName, Chr, kValue
@@ -44,11 +42,10 @@ while(skillIndex < 9){
 	}
 	
 	keyStrings[skillIndex] := kName
-	shiftPreset[skillIndex] := preset
-	shiftState[kName] := prevState
+	shiftState[kName] := shiftPrevious[skillIndex]
 	
 	Hotkey, +!%kName% ,switchLabel
-	if(prevState == true){
+	if(shiftState[kName] == true){
 		Hotkey, *$%kName% ,lockLabel, On	
 	} 
 	else{
@@ -58,26 +55,9 @@ while(skillIndex < 9){
 }
 FileDelete, tempConfig.ini
 
-
-
-/*for index, keyCode in keyStrings
-	{
-		tempKey := skillPrefix . index
-		IniRead, prevState, Config.ini, Saved, %tempKey%, false
-		shiftState[keyCode] := prevState ;false
-		
-		Hotkey, +!%keyCode% ,switchLabel
-		if(prevState == true){
-			Hotkey, *$%keyCode% ,lockLabel, On	
-		} 
-		else{
-			Hotkey, *$%keyCode% ,lockLabel, Off
-		}
-		
-	}
-*/
 if(disableLMB == true){
 	Hotkey, +!LButton, Off
+	shiftState["LButton"] := false
 }
 
 return
@@ -127,7 +107,7 @@ return
 		Hotkey, *$%keyCode%, Off
 				
 	}
-	displayState()
+	writeStateToIni("previous")
 	return
 }
 
@@ -157,18 +137,9 @@ return
 }
 
 ^!#p::
-{
-	global shiftState
-	global keyStrings
-	global shiftPreset
-	for index, keyCode in keyStrings
-	{
-		shiftPreset[index] := shiftState[keyCode]
-		key := skillPrefix . index
-		value := shiftState[keyCode]
-		IniWrite, %value%, Config.ini, Preset, %key%
-	}
-	return
+{	
+	SoundBeep, 600, 400
+	writeStateToIni("preset")
 }
 
 
@@ -209,11 +180,8 @@ displayState()
 			SplashImage, %index%:shiftArrow48TG.gif, b x%xyCoords1% y%xyCoords2% ,,, Image%index%
 			WinSet, TransColor, White, Image%index%
 		}
-		;Write current status to ini
-		value := shiftState[keyCode]
-		tempKey := skillPrefix . index
-		IniWrite, %value%, Config.ini, Saved, %tempKey%
 	}
+	writeStateToIni("previous")
 	if(blockDisplay == false){
 		blockDisplay := true
 		Sleep, 1500
@@ -224,6 +192,37 @@ displayState()
 		blockDisplay := false
 	}
 	return
+}
+
+writeStateToIni(key)
+{
+	global shiftState
+	global keyStrings
+	global skillPrefix
+	global shiftPreset
+
+	saveStr := ""
+	for index, keyCode in keyStrings
+	{
+		saveStr := saveStr . shiftState[keyCode]
+		if(key == "preset"){
+			shiftPreset[index] := shiftState[keyCode]
+		}
+	}
+	IniWrite, %saveStr%, Config.ini, Saved, %key%
+	return
+}
+
+readStateFromIni(key)
+{
+	IniRead, strState, Config.ini, Saved, %key%, 00000000
+	toArray := StrSplit(strState)
+	return toArray
+}
+
+readPreset()
+{
+
 }
 
 
