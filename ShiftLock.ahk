@@ -177,7 +177,13 @@ displayState()
 	{
 		if (shiftState[keyCode] == true){
 			IniRead, iCoord, Config.ini, Skill_to_Coord, %index%
+			SysGet, monRes, Monitor
+			xScale := monResRight / 1680
+			yScale := monResBottom / 1050
 			StringSplit, xyCoords, iCoord, `,
+			xyCoords1 := xyCoords1 * xScale
+			xyCoords2 := xyCoords2 * yScale
+			
 			SplashImage, %index%:shiftArrow48TG.gif, b x%xyCoords1% y%xyCoords2% ,,, Image%index%
 			WinSet, TransColor, White, Image%index%
 		}
