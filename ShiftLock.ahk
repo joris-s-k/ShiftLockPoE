@@ -23,7 +23,7 @@ FileRead, tempIni, %productionPath%
 FileAppend, %tempIni%, tempConfig.ini
 ;prodConf := FileOpen(%productionPath%, "r")
 IniRead, disableLMB, Config.ini, General, disableLMB
-blockDisplay := false
+blockList := Object()
 
 #If WinActive("ahk_group PoEWindowGrp")
 
@@ -171,6 +171,7 @@ displayState()
 	global keyStrings
 	global blockDisplay
 	global skillPrefix
+	global blockList
 	
 	for index, keyCode in keyStrings
 	{
@@ -180,16 +181,19 @@ displayState()
 			SplashImage, %index%:shiftArrow48TG.gif, b x%xyCoords1% y%xyCoords2% ,,, Image%index%
 			WinSet, TransColor, White, Image%index%
 		}
+		else{
+			SplashImage, %index%:Off
+		}
 	}
 	writeStateToIni("previous")
-	if(blockDisplay == false){
-		blockDisplay := true
-		Sleep, 1500
+	blockList.Push(1)
+	Sleep, 1000
+	blockList.Pop()
+	if(blockList.length() == 0){
 		for index, keyCode in keyStrings
 		{
 			SplashImage, %index%:Off
 		}
-		blockDisplay := false
 	}
 	return
 }
